@@ -28,6 +28,7 @@ public class server extends javax.swing.JFrame {
 
         jLabel1 = new javax.swing.JLabel();
         jLabel3 = new javax.swing.JLabel();
+        jButton1 = new javax.swing.JButton();
         mainWallpaper = new javax.swing.JLabel();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
@@ -40,6 +41,9 @@ public class server extends javax.swing.JFrame {
         jLabel3.setFont(new java.awt.Font("Helvetica Neue", 0, 14)); // NOI18N
         jLabel3.setText("Lets Start Your Server");
         getContentPane().add(jLabel3, new org.netbeans.lib.awtextra.AbsoluteConstraints(360, 150, -1, -1));
+
+        jButton1.setText("Start ");
+        getContentPane().add(jButton1, new org.netbeans.lib.awtextra.AbsoluteConstraints(350, 200, 170, -1));
 
         mainWallpaper.setIcon(new javax.swing.ImageIcon(getClass().getResource("/client/Picture1.png"))); // NOI18N
         mainWallpaper.setText("jLabel2");
@@ -84,6 +88,7 @@ public class server extends javax.swing.JFrame {
     }
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
+    private javax.swing.JButton jButton1;
     private javax.swing.JLabel jLabel1;
     private javax.swing.JLabel jLabel3;
     private javax.swing.JLabel mainWallpaper;
