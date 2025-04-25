@@ -4,14 +4,20 @@
  */
 package client;
 
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
+import java.util.Stack;
 import javax.swing.JLabel;
+import javax.swing.JOptionPane;
 
 /**
  *
  * @author macbook
  */
 public class GameMainPanel extends javax.swing.JFrame {
-
+private boolean isBlackTurn = true;
     /**
      * Creates new form GameMainPanel
      */
@@ -20,7 +26,7 @@ public class GameMainPanel extends javax.swing.JFrame {
    
     initializeLabelGrid();
     initializeBoard();
-    pointNeigboursInitilizer();
+
     
     
     }
@@ -149,46 +155,85 @@ public void initializeBoard() {
             boardInfo[i][j] = p;
 
             p.label.putClientProperty("point", p);
-            p.label.setText("EMP");
+            p.label.setText("E");
+            
+            
+            
+            
+            
+            
+     
 
-            // 🔁 Add the Mouse Listener here:
+            
+     
+        }
+    }
+
+    
+           pointNeigboursInitilizer();
+           addListeners();
+ 
+}
+
+    
+
+private void addListeners() {
+    for (int i = 0; i < 9; i++) {
+        for (int j = 0; j < 9; j++) {
+            Point p = boardInfo[i][j];
+
             p.label.addMouseListener(new java.awt.event.MouseAdapter() {
                 public void mouseClicked(java.awt.event.MouseEvent evt) {
                     Point clickedPoint = (Point) ((JLabel) evt.getSource()).getClientProperty("point");
 
                     if (clickedPoint.state.equals("EMPTY")) {
-                       
+                    
+                        clickedPoint.state = isBlackTurn ? "BLACK" : "WHITE";
+                        clickedPoint.label.setText(isBlackTurn ? "B" : "W");
+
                         
-                        
-                        clickedPoint.state = "TESTcolor";
-                        clickedPoint.label.setText("BLACK");
-                        
-                        /*
-                        if (isBlackTurn) {
-                            clickedPoint.state = "BLACK";
-                            clickedPoint.label.setText("BLACK STONE");
-                        } else {
-                            clickedPoint.state = "WHITE";
-                            clickedPoint.label.setText("WHITE STONE");
+                        String opponentColor = isBlackTurn ? "WHITE" : "BLACK";
+                        Point[] neighbors = {clickedPoint.up, clickedPoint.down, clickedPoint.left, clickedPoint.right};
+
+                        for (Point neighbor : neighbors) {
+                            if (neighbor != null && neighbor.state.equals(opponentColor)) {
+                                Set<Point> neighborGroup = getConnectedGroup(neighbor);
+                                if (isGroupCaptured(neighborGroup)) {
+                                    for (Point captured : neighborGroup) {
+                                        captured.state = "EMPTY";
+                                        captured.label.setText("E");
+                                    }
+                                }
+                            }
                         }
-*/
-                        
-                        
-                       // isBlackTurn = !isBlackTurn;
-                        
+
+                       
+                        Set<Point> group = getConnectedGroup(clickedPoint);
+                        if (isGroupCaptured(group)) {
+                            for (Point point : group) {
+                                point.state = "EMPTY";
+                                point.label.setText("E");
+                            }
+                        }
+
+                       
+                        isBlackTurn = !isBlackTurn;
+
+                        if (countEmpty(boardInfo) == 0) {
+                            Map<String, Integer> result = calculateTerritory(boardInfo);
+                            JOptionPane.showMessageDialog(null, "Game Over!\nBlack: " + result.get("BLACK") + "\nWhite: " + result.get("WHITE"));
+                        }
                     }
                 }
             });
         }
     }
-
- 
 }
 
     
-    
     public void pointNeigboursInitilizer(){
     
+        System.out.println("i am called ");
         for (int i = 0; i <9; i++) {
             for (int j = 0; j < 9; j++) {
                 
@@ -207,6 +252,171 @@ public void initializeBoard() {
         }
     
     }
+    
+    
+    
+    
+     public int countEmpty(Point[][] board) {
+    int count = 0;
+    for (int i = 0; i < 9; i++) {
+        for (int j = 0; j < 9; j++) {
+            if (board[i][j].state.equals("EMPTY")) {
+                count++;
+            }
+        }
+    }
+    return count;
+}
+
+     
+     public boolean hasLiberty(Point point) {
+    return (point.up != null && point.up.state.equals("EMPTY")) ||
+           (point.down != null && point.down.state.equals("EMPTY")) ||
+           (point.left != null && point.left.state.equals("EMPTY")) ||
+           (point.right != null && point.right.state.equals("EMPTY"));
+}
+
+     
+     
+public Set<Point> getConnectedGroup(Point start) {
+    Set<Point> group = new HashSet<>();
+    Stack<Point> stack = new Stack<>();
+    stack.push(start);
+    String color = start.state;
+
+    while (!stack.isEmpty()) {
+        Point current = stack.pop();
+        if (!group.contains(current) && current.state.equals(color)) {
+            group.add(current);
+            if (current.up != null && !group.contains(current.up)) stack.push(current.up);
+            if (current.down != null && !group.contains(current.down)) stack.push(current.down);
+            if (current.left != null && !group.contains(current.left)) stack.push(current.left);
+            if (current.right != null && !group.contains(current.right)) stack.push(current.right);
+        }
+    }
+
+    return group;
+}
+
+     
+     
+public boolean isGroupCaptured(Set<Point> group) {
+    for (Point p : group) {
+        if (hasLiberty(p)) {
+            return false;  // If any point in the group has liberty, the group is not captured
+        }
+    }
+
+    // If the group is captured, I SEt all points in the group to "EMPTY"
+    for (Point p : group) {
+        p.state = "EMPTY";  // Set state to "EMPTY"
+        p.label.setText("E"); // Update the UI label to show "E"
+    }
+
+    return true;  // Group is captured and has been cleared
+}
+
+
+     
+     
+     
+public static Map<String, Integer> calculateTerritory(Point[][] board) {
+    int rows = board.length;
+    int cols = board[0].length;
+    boolean[][] visited = new boolean[rows][cols];
+    Map<String, Integer> territory = new HashMap<>();
+    territory.put("BLACK", 0);
+    territory.put("WHITE", 0);
+
+    for (int i = 0; i < rows; i++) {
+        for (int j = 0; j < cols; j++) {
+            if (!visited[i][j] && board[i][j].state.equals("EMPTY")) {
+                Set<Point> region = new HashSet<>();
+                Set<String> surroundingColors = new HashSet<>();
+                exploreEmptyTerritory(board, i, j, visited, region, surroundingColors);
+
+                if (surroundingColors.size() == 1) {
+                    String owner = surroundingColors.iterator().next(); // BLACK or WHITE
+                    territory.put(owner, territory.get(owner) + region.size());
+                }
+               
+            }
+        }
+    }
+
+    return territory;
+}
+
+
+
+
+
+private static void exploreEmptyTerritory(Point[][] board, int row, int col,
+                                          boolean[][] visited, Set<Point> region,
+                                          Set<String> surroundingColors) {
+    int rows = board.length;
+    int cols = board[0].length;
+    Stack<Point> stack = new Stack<>();
+    stack.push(board[row][col]);
+
+    while (!stack.isEmpty()) {
+        Point p = stack.pop();
+        int r = p.row;
+        int c = p.col;
+
+        if (r < 0 || r >= rows || c < 0 || c >= cols || visited[r][c]) continue;
+        visited[r][c] = true;
+
+        if (!board[r][c].state.equals("EMPTY")) {
+            surroundingColors.add(board[r][c].state);
+            continue;
+        }
+
+        region.add(board[r][c]);
+
+        // check 4 directions
+        if (r > 0) stack.push(board[r - 1][c]);
+        if (r < rows - 1) stack.push(board[r + 1][c]);
+        if (c > 0) stack.push(board[r][c - 1]);
+        if (c < cols - 1) stack.push(board[r][c + 1]);
+    }
+}
+
+
+
+private void findTerritory(Point point, boolean[][] visited, Set<Point> region, Set<String> borderingColors) {
+    Stack<Point> stack = new Stack<>();
+    stack.push(point);
+
+    while (!stack.isEmpty()) {
+        Point current = stack.pop();
+        if (visited[current.row][current.col]) continue;
+
+        visited[current.row][current.col] = true;
+        region.add(current);
+
+        Point[] neighbors = {current.up, current.down, current.left, current.right};
+
+        for (Point neighbor : neighbors) {
+            if (neighbor == null) continue;
+            if (neighbor.state.equals("EMPTY") && !visited[neighbor.row][neighbor.col]) {
+                stack.push(neighbor);
+            } else if (!neighbor.state.equals("EMPTY")) {
+                borderingColors.add(neighbor.state);
+            }
+        }
+    }
+}
+
+
+
+
+
+     
+     
+     
+     
+    
 
     /**
      * This method is called from within the constructor to initialize the form.
@@ -308,6 +518,7 @@ public void initializeBoard() {
         seventhRowNinthCol = new javax.swing.JLabel();
         eighthRowNinthCol = new javax.swing.JLabel();
         ninthRowNinthCol = new javax.swing.JLabel();
+        jButton1 = new javax.swing.JButton();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
         getContentPane().setLayout(new org.netbeans.lib.awtextra.AbsoluteLayout());
@@ -591,8 +802,29 @@ public void initializeBoard() {
         ninthRowNinthCol.setText("empty");
         getContentPane().add(ninthRowNinthCol, new org.netbeans.lib.awtextra.AbsoluteConstraints(810, 430, -1, -1));
 
+        jButton1.setText("Pass Game");
+        jButton1.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jButton1ActionPerformed(evt);
+            }
+        });
+        getContentPane().add(jButton1, new org.netbeans.lib.awtextra.AbsoluteConstraints(130, 410, -1, -1));
+
         pack();
     }// </editor-fold>//GEN-END:initComponents
+
+    private void jButton1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton1ActionPerformed
+
+
+
+Map<String, Integer> result = calculateTerritory(boardInfo);
+System.out.println("Black Territory: " + result.get("BLACK"));
+System.out.println("White Territory: " + result.get("WHITE"));
+
+
+
+        // TODO add your handling code here:
+    }//GEN-LAST:event_jButton1ActionPerformed
 
     /**
      * @param args the command line arguments
@@ -679,6 +911,7 @@ public void initializeBoard() {
     private javax.swing.JLabel fourthRowFourthCol;
     private javax.swing.JLabel fourthRowSeventhCol;
     private javax.swing.JLabel fourthRowSixthCol;
+    private javax.swing.JButton jButton1;
     private javax.swing.JList<String> jList1;
     private javax.swing.JButton leaveGameBtn;
     private javax.swing.JScrollPane listOfPlayers;
