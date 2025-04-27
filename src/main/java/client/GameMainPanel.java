@@ -9,6 +9,7 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.Stack;
+import javax.swing.ImageIcon;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 
@@ -18,12 +19,29 @@ import javax.swing.JOptionPane;
  */
 public class GameMainPanel extends javax.swing.JFrame {
 private boolean isBlackTurn = true;
+private GameClient client;
+private String playerColor;
+private boolean isMyTurn;
+
+
+  
     /**
+     * 
+     * 
+     * 
      * Creates new form GameMainPanel
+     * 
+     *
      */
+    
+    
+    
     public GameMainPanel() {
+         
         initComponents();
-   
+    
+client = new GameClient(this);
+
     initializeLabelGrid();
     initializeBoard();
 
@@ -186,10 +204,15 @@ private void addListeners() {
                 public void mouseClicked(java.awt.event.MouseEvent evt) {
                     Point clickedPoint = (Point) ((JLabel) evt.getSource()).getClientProperty("point");
 
-                    if (clickedPoint.state.equals("EMPTY")) {
+                  if (clickedPoint.state.equals("EMPTY") && isMyTurn) {
+
                     
                         clickedPoint.state = isBlackTurn ? "BLACK" : "WHITE";
                         clickedPoint.label.setText(isBlackTurn ? "B" : "W");
+                        
+                        client.sendMove(clickedPoint.row + ":" + clickedPoint.col + ":" + clickedPoint.state);
+isMyTurn = false;
+
 
                         
                         String opponentColor = isBlackTurn ? "WHITE" : "BLACK";
@@ -414,6 +437,25 @@ private void findTerritory(Point point, boolean[][] visited, Set<Point> region, 
 
      
      
+public void setPlayerColor(String color) {
+    this.playerColor = color;
+    this.isMyTurn = color.equals("BLACK");
+    JOptionPane.showMessageDialog(null, "You are " + color);
+}
+
+public void receiveMove(String move) {
+    String[] parts = move.split(":");
+    int row = Integer.parseInt(parts[0]);
+    int col = Integer.parseInt(parts[1]);
+    String color = parts[2];
+
+    Point point = boardInfo[row][col];
+    point.state = color;
+    point.label.setText(color.equals("BLACK") ? "B" : "W");
+    isBlackTurn = !isBlackTurn;
+    isMyTurn = true;
+}
+
      
      
     
@@ -519,6 +561,7 @@ private void findTerritory(Point point, boolean[][] visited, Set<Point> region, 
         eighthRowNinthCol = new javax.swing.JLabel();
         ninthRowNinthCol = new javax.swing.JLabel();
         jButton1 = new javax.swing.JButton();
+        wallpaper = new javax.swing.JLabel();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
         getContentPane().setLayout(new org.netbeans.lib.awtextra.AbsoluteLayout());
@@ -536,7 +579,9 @@ private void findTerritory(Point point, boolean[][] visited, Set<Point> region, 
 
         getContentPane().add(listOfPlayers, new org.netbeans.lib.awtextra.AbsoluteConstraints(20, 190, 60, -1));
 
+        GameLogo.setBackground(new java.awt.Color(255, 255, 255));
         GameLogo.setFont(new java.awt.Font("Helvetica Neue", 0, 36)); // NOI18N
+        GameLogo.setForeground(new java.awt.Color(255, 255, 255));
         GameLogo.setText(" GO - X Pro Game");
         getContentPane().add(GameLogo, new org.netbeans.lib.awtextra.AbsoluteConstraints(10, 60, 320, -1));
 
@@ -810,6 +855,10 @@ private void findTerritory(Point point, boolean[][] visited, Set<Point> region, 
         });
         getContentPane().add(jButton1, new org.netbeans.lib.awtextra.AbsoluteConstraints(130, 410, -1, -1));
 
+        wallpaper.setIcon(new javax.swing.ImageIcon(getClass().getResource("/images/GamePanel.png"))); // NOI18N
+        wallpaper.setText("jLabel1");
+        getContentPane().add(wallpaper, new org.netbeans.lib.awtextra.AbsoluteConstraints(0, -10, 880, 470));
+
         pack();
     }// </editor-fold>//GEN-END:initComponents
 
@@ -954,5 +1003,6 @@ System.out.println("White Territory: " + result.get("WHITE"));
     private javax.swing.JLabel thirdRowNinthCol;
     private javax.swing.JLabel thirdRowSeventhCol;
     private javax.swing.JLabel thirdRowSixthCol;
+    private javax.swing.JLabel wallpaper;
     // End of variables declaration//GEN-END:variables
 }

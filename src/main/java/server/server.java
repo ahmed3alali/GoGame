@@ -4,17 +4,39 @@
  */
 package server;
 
+import java.net.ServerSocket;
+import java.net.Socket;
+import java.util.ArrayList;
+import java.util.List;
+
 /**
  *
  * @author macbook
  */
 public class server extends javax.swing.JFrame {
 
+    private static final int PORT = 6000;
+    
+    
+    public static List<ClientHandler> waitingClients = new ArrayList<>();
+    
+    
+    
+         
+    
+    
+    
     /**
      * Creates new form server
      */
     public server() {
+        
+      
+         
         initComponents();
+        
+       
+        
     }
 
     /**
@@ -43,14 +65,48 @@ public class server extends javax.swing.JFrame {
         getContentPane().add(jLabel3, new org.netbeans.lib.awtextra.AbsoluteConstraints(360, 150, -1, -1));
 
         jButton1.setText("Start ");
+        jButton1.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jButton1ActionPerformed(evt);
+            }
+        });
         getContentPane().add(jButton1, new org.netbeans.lib.awtextra.AbsoluteConstraints(350, 200, 170, -1));
 
-        mainWallpaper.setIcon(new javax.swing.ImageIcon(getClass().getResource("/client/Picture1.png"))); // NOI18N
+        mainWallpaper.setIcon(new javax.swing.ImageIcon(getClass().getResource("/images/Picture1.png"))); // NOI18N
         mainWallpaper.setText("jLabel2");
-        getContentPane().add(mainWallpaper, new org.netbeans.lib.awtextra.AbsoluteConstraints(0, 0, 870, -1));
+        getContentPane().add(mainWallpaper, new org.netbeans.lib.awtextra.AbsoluteConstraints(0, 0, 870, 440));
 
         pack();
     }// </editor-fold>//GEN-END:initComponents
+
+    private void jButton1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton1ActionPerformed
+      
+        System.out.println("Server started....");
+
+        try (ServerSocket serverSocket = new ServerSocket(PORT)){
+
+            while (true) {                
+                
+                
+                Socket socket = serverSocket.accept();
+                System.out.println("New Client connected ...");
+                
+                ClientHandler handler = new ClientHandler(socket);
+                
+                new Thread(handler).start();
+                
+                
+            }
+
+            
+        } catch (Exception e) {
+        }
+        
+
+
+
+// TODO add your handling code here:
+    }//GEN-LAST:event_jButton1ActionPerformed
 
     /**
      * @param args the command line arguments
