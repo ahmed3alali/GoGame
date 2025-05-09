@@ -22,7 +22,7 @@ public class GameClient {
     public GameClient(GameMainPanel gamePanel) {
         this.gamePanel = gamePanel;
         try {
-            socket = new Socket("localhost", 6000);
+            socket = new Socket("ec2-56-228-4-249.eu-north-1.compute.amazonaws.com", 6000);
             out = new ObjectOutputStream(socket.getOutputStream());
             in = new ObjectInputStream(socket.getInputStream());
 
