@@ -14,6 +14,7 @@ import java.net.Socket;
 import javax.swing.SwingUtilities;
 
 public class GameClient {
+
     private ObjectOutputStream out;
     private ObjectInputStream in;
     private Socket socket;
@@ -21,8 +22,11 @@ public class GameClient {
 
     public GameClient(GameMainPanel gamePanel) {
         this.gamePanel = gamePanel;
+
         try {
-            socket = new Socket("ec2-56-228-4-249.eu-north-1.compute.amazonaws.com", 6000);
+            //  socket = new Socket("ec2-56-228-4-249.eu-north-1.compute.amazonaws.com", 6000);
+            socket = new Socket("localhost", 6000);
+
             out = new ObjectOutputStream(socket.getOutputStream());
             in = new ObjectInputStream(socket.getInputStream());
 
@@ -46,9 +50,22 @@ public class GameClient {
         try {
             while (true) {
                 String message = (String) in.readObject();
+
                 if (message.startsWith("START")) {
                     String color = message.split(":")[1];
                     gamePanel.setPlayerColor(color);
+
+                } else if (message.equals("OPPO"
+                        + "NENT_LEFT")) {
+                    SwingUtilities.invokeLater(() -> {
+                        javax.swing.JOptionPane.showMessageDialog(
+                                gamePanel,
+                                "Opponent left the game.",
+                                "Game Over",
+                                javax.swing.JOptionPane.INFORMATION_MESSAGE
+                        );
+                        System.exit(0);
+                    });
                 } else {
                     gamePanel.receiveMove(message);
                 }

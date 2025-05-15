@@ -6,10 +6,11 @@ import java.io.ObjectOutputStream;
 import java.net.Socket;
 
 public class ClientHandler implements Runnable {
-    private Socket socket;
+    public Socket socket;
     private ObjectOutputStream out;
     private ObjectInputStream in;
-    private GameSession session;
+    public GameSession session;
+public String playerName = "Unknown";
 
     public ClientHandler(Socket socket) {
         this.socket = socket;
@@ -37,12 +38,27 @@ public class ClientHandler implements Runnable {
             // Add this client to the waiting list and check if two players are available
             deServer.addWaitingClient(this);
 
-            while (true) {
-                String move = (String) in.readObject();
-                if (session != null) {
-                    session.forwardMove(this, move);
-                }
-            }
+      while (true) {
+    String move = (String) in.readObject();
+
+    if (move.startsWith("NAME:")) {
+        playerName = move.substring("NAME:".length()).trim();
+        continue;
+    }
+
+    if ("EXIT".equals(move)) {
+        System.out.println("Client wants to exit.");
+        if (session != null) {
+            session.handlePlayerExit(this);
+        }
+        break;
+    }
+
+    if (session != null) {
+        session.forwardMove(this, move);
+    }
+}
+
         } catch (Exception e) {
             System.out.println("Client disconnected.");
         } finally {
