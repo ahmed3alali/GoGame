@@ -24,7 +24,7 @@ public class GameClient {
         this.gamePanel = gamePanel;
 
         try {
-            //  socket = new Socket("ec2-56-228-4-249.eu-north-1.compute.amazonaws.com", 6000);
+            //socket = new Socket("ec2-56-228-4-249.eu-north-1.compute.amazonaws.com", 6000);
             socket = new Socket("localhost", 6000);
 
             out = new ObjectOutputStream(socket.getOutputStream());
@@ -33,7 +33,9 @@ public class GameClient {
             new Thread(() -> listen()).start();
 
         } catch (Exception e) {
-            e.printStackTrace();
+           
+            gamePanel.serverConnectionError();
+            
         }
     }
 
@@ -42,7 +44,7 @@ public class GameClient {
             out.writeObject(move);
             out.flush();
         } catch (IOException e) {
-            e.printStackTrace();
+            System.out.println("Conneciton to the other game frame got lost. Reasons could be like a user left or etc.");
         }
     }
 
@@ -66,12 +68,38 @@ public class GameClient {
                         );
                         System.exit(0);
                     });
-                } else {
+                } else if (message.startsWith("CLEAR:")) {
+    String[] parts = message.split(":");
+    int row = Integer.parseInt(parts[1]);
+    int col = Integer.parseInt(parts[2]);
+
+    Point p = gamePanel.boardInfo[row][col];
+    p.state = "EMPTY";
+    p.label.setText("E");
+} else if (message.startsWith("SCORE:")) {
+    String[] scores = message.substring(6).split(",");
+    for (String score : scores) {
+        String[] kv = score.split("=");
+        String color = kv[0];
+        int value = Integer.parseInt(kv[1]);
+
+        if (color.equals("BLACK")) {
+            gamePanel.setSecondPlayerScore(value);
+            gamePanel.blackCaptured = value;
+        } else if (color.equals("WHITE")) {
+            gamePanel.setFirstPlayerScore(value);
+            gamePanel.whiteCaptured = value;
+        }
+    }
+} else {
                     gamePanel.receiveMove(message);
                 }
             }
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
+        } catch (EOFException e) {
+        System.out.println("Connection closed by server.");
+        // Optionally: clean up or stop thread here
+    } catch (IOException | ClassNotFoundException e) {
+        e.printStackTrace();
+    }
     }
 }

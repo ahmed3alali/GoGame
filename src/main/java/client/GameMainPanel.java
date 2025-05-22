@@ -27,6 +27,7 @@ public class GameMainPanel extends javax.swing.JFrame {
 
     private String myName;
     private String opponentName;
+    
 
     /**
      *
@@ -38,18 +39,40 @@ public class GameMainPanel extends javax.swing.JFrame {
      */
     public GameMainPanel() {
 
-        initComponents();
+    initComponents();
 
-        String playerName = JOptionPane.showInputDialog(
-                this,
-                "Enter your name:",
-                "Player Name",
-                JOptionPane.PLAIN_MESSAGE
-        );
+String playerName = JOptionPane.showInputDialog(
+        this,
+        "Enter your name:",
+        "Player Name",
+        JOptionPane.PLAIN_MESSAGE
+);
 
-        firstPlayerName.setText(playerName);
+if (playerName == null) {
+    // Cancel was pressed
+    JOptionPane.showMessageDialog(
+        this,
+        "You must enter a name to continue.",
+        "Input Required",
+        JOptionPane.WARNING_MESSAGE
+    );
+    System.exit(0); 
+    
+} else {
+    firstPlayerName.setText(playerName);
+}
 
-        client = new GameClient(this); // pass the name to GameClient
+
+        
+        
+        try {
+            
+            client = new GameClient(this); 
+            
+        } catch (Exception e) {
+            JOptionPane.showMessageDialog(rootPane, "Please connect to a server first then start the game frame again");
+        }
+        // pass the name to GameClient
 
         initializeLabelGrid();
         initializeBoard();
@@ -57,7 +80,7 @@ public class GameMainPanel extends javax.swing.JFrame {
     }
 
     private JLabel[][] labelGrid = new JLabel[9][9];
-    private Point[][] boardInfo = new Point[9][9];
+    public Point[][] boardInfo = new Point[9][9];
 
     private void initializeLabelGrid() {
         labelGrid[0][0] = firstColfirRow;
@@ -137,7 +160,7 @@ public class GameMainPanel extends javax.swing.JFrame {
         labelGrid[6][8] = ninthRowSeventhCol;
 
         // eight column
-        labelGrid[7][0] = fifthRowEightCol;
+        labelGrid[7][0] = firstRowEighthCol;
         labelGrid[7][1] = secondRowEighthCol;
         labelGrid[7][2] = thirdRowEighthCol;
         labelGrid[7][3] = forthRowEightCol;
@@ -180,6 +203,14 @@ public class GameMainPanel extends javax.swing.JFrame {
         addListeners();
 
     }
+    
+    
+    public void serverConnectionError(){
+        
+     JOptionPane.showMessageDialog(rootPane,  "Please connect to a server first then start the game frame again");
+    System.exit(0);
+    
+    }
 
     int blackCaptured = 0;
     int whiteCaptured = 0;
@@ -198,6 +229,9 @@ public class GameMainPanel extends javax.swing.JFrame {
             Player2ScoreValue.setText(Integer.toString(currentScoreBlack));
 
         }
+        
+        
+        client.sendMove("SCORE:BLACK=" + blackCaptured + ",WHITE=" + whiteCaptured);
 
     }
 
@@ -231,6 +265,7 @@ public class GameMainPanel extends javax.swing.JFrame {
 
                                             captured.state = "EMPTY";
                                             captured.label.setText("E");
+                                            client.sendMove("CLEAR:" + captured.row + ":" + captured.col);
 
                                         }
 
@@ -293,6 +328,10 @@ public class GameMainPanel extends javax.swing.JFrame {
         }
         return count;
     }
+    
+    
+    
+
 
     public boolean hasLiberty(Point point) {
         return (point.up != null && point.up.state.equals("EMPTY"))
@@ -347,17 +386,18 @@ public class GameMainPanel extends javax.swing.JFrame {
                 if (p.state.equals("BLACK")) {
                     blackCaptured++;
                     System.out.println("black capture value is : "+ blackCaptured);
-                    Player1ScoreValue.setText(Integer.toString(blackCaptured));
+                    Player2ScoreValue.setText(Integer.toString(blackCaptured));
                     
                 
                 } else if (p.state.equals("WHITE")) {
                     whiteCaptured++;
                
-                    Player2ScoreValue.setText(Integer.toString(whiteCaptured));
+                    Player1ScoreValue.setText(Integer.toString(whiteCaptured));
                     
                 
             }
-                                     
+                    client.sendMove("SCORE:BLACK=" + blackCaptured + ",WHITE=" + whiteCaptured);
+                  
             p.state = "EMPTY";  // Set state to "EMPTY"
             p.label.setText("E"); // Update the UI label to show "E"
         }
@@ -469,8 +509,37 @@ public class GameMainPanel extends javax.swing.JFrame {
         this.isMyTurn = color.equals("BLACK");
         JOptionPane.showMessageDialog(null, "You are " + color);
     }
+    
+    
+    public void setFirstPlayerScore(int score){
+    
+        Player1ScoreValue.setText(Integer.toString(score));
+    
+    
+    }
+    
+    
+      public void setSecondPlayerScore(int score){
+    
+        Player2ScoreValue.setText(Integer.toString(score));
+    
+    
+    }
 
     public void receiveMove(String move) {
+        
+           if (move.equals("EXIT")) {
+        // Opponent left the game
+        javax.swing.JOptionPane.showMessageDialog(
+            this,
+            "Your opponent has left the game ee.",
+            "Game Ended",
+            javax.swing.JOptionPane.INFORMATION_MESSAGE
+        );
+        // Optionally: Disable game board or go back to main menu
+return;
+           }
+        
         String[] parts = move.split(":");
         int row = Integer.parseInt(parts[0]);
         int col = Integer.parseInt(parts[1]);
@@ -496,7 +565,6 @@ public class GameMainPanel extends javax.swing.JFrame {
         GameLogo = new javax.swing.JLabel();
         leaveGameBtn = new javax.swing.JButton();
         firstPlayerName = new javax.swing.JLabel();
-        TeamColorLabel = new javax.swing.JLabel();
         firstColfirRow = new javax.swing.JLabel();
         secondRowFirstCol = new javax.swing.JLabel();
         thirdRowFirstCol = new javax.swing.JLabel();
@@ -580,7 +648,6 @@ public class GameMainPanel extends javax.swing.JFrame {
         ninthRowNinthCol = new javax.swing.JLabel();
         Player2ScoreValue = new javax.swing.JLabel();
         jButton1 = new javax.swing.JButton();
-        StoneColor = new javax.swing.JLabel();
         Player1ScoreValue = new javax.swing.JLabel();
         Player1Score = new javax.swing.JLabel();
         Player2Score = new javax.swing.JLabel();
@@ -589,19 +656,20 @@ public class GameMainPanel extends javax.swing.JFrame {
         Player1Score1 = new javax.swing.JLabel();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
+        setResizable(false);
         getContentPane().setLayout(new org.netbeans.lib.awtextra.AbsoluteLayout());
 
         Scores.setBackground(new java.awt.Color(255, 255, 255));
         Scores.setFont(new java.awt.Font("Herculanum", 1, 24)); // NOI18N
         Scores.setForeground(new java.awt.Color(255, 153, 0));
-        Scores.setText("Scores");
+        Scores.setText("Score");
         getContentPane().add(Scores, new org.netbeans.lib.awtextra.AbsoluteConstraints(20, 260, 90, -1));
 
         GameLogo.setBackground(new java.awt.Color(255, 255, 255));
         GameLogo.setFont(new java.awt.Font("Kohinoor Bangla", 0, 36)); // NOI18N
         GameLogo.setForeground(new java.awt.Color(255, 255, 255));
         GameLogo.setText(" GO - X Pro Game");
-        getContentPane().add(GameLogo, new org.netbeans.lib.awtextra.AbsoluteConstraints(10, 60, 320, -1));
+        getContentPane().add(GameLogo, new org.netbeans.lib.awtextra.AbsoluteConstraints(10, 60, 280, -1));
 
         leaveGameBtn.setText("Leave game");
         leaveGameBtn.addActionListener(new java.awt.event.ActionListener() {
@@ -609,260 +677,417 @@ public class GameMainPanel extends javax.swing.JFrame {
                 leaveGameBtnActionPerformed(evt);
             }
         });
-        getContentPane().add(leaveGameBtn, new org.netbeans.lib.awtextra.AbsoluteConstraints(10, 410, -1, -1));
+        getContentPane().add(leaveGameBtn, new org.netbeans.lib.awtextra.AbsoluteConstraints(10, 390, -1, -1));
 
         firstPlayerName.setFont(new java.awt.Font("Hiragino Maru Gothic ProN", 0, 18)); // NOI18N
         firstPlayerName.setForeground(new java.awt.Color(255, 255, 255));
         firstPlayerName.setText("player1");
-        getContentPane().add(firstPlayerName, new org.netbeans.lib.awtextra.AbsoluteConstraints(150, 150, -1, -1));
-
-        TeamColorLabel.setFont(new java.awt.Font("Helvetica Neue", 1, 18)); // NOI18N
-        TeamColorLabel.setForeground(new java.awt.Color(255, 204, 0));
-        TeamColorLabel.setText("Stone Color ");
-        getContentPane().add(TeamColorLabel, new org.netbeans.lib.awtextra.AbsoluteConstraints(20, 190, 120, -1));
-
-        firstColfirRow.setText("empty");
-        getContentPane().add(firstColfirRow, new org.netbeans.lib.awtextra.AbsoluteConstraints(330, 30, -1, -1));
-
-        secondRowFirstCol.setText("empty");
-        getContentPane().add(secondRowFirstCol, new org.netbeans.lib.awtextra.AbsoluteConstraints(330, 70, -1, -1));
-
-        thirdRowFirstCol.setText("empty");
-        getContentPane().add(thirdRowFirstCol, new org.netbeans.lib.awtextra.AbsoluteConstraints(330, 130, -1, -1));
-
-        fourthRowFirstCol.setText("empty");
-        getContentPane().add(fourthRowFirstCol, new org.netbeans.lib.awtextra.AbsoluteConstraints(330, 190, -1, -1));
-
-        fifthRowFirstCol.setText("empty");
-        getContentPane().add(fifthRowFirstCol, new org.netbeans.lib.awtextra.AbsoluteConstraints(330, 250, -1, -1));
-
-        sixthRowFirstCol.setText("empty");
-        getContentPane().add(sixthRowFirstCol, new org.netbeans.lib.awtextra.AbsoluteConstraints(330, 430, -1, -1));
-
-        seventhRowFirstCol.setText("empty");
-        getContentPane().add(seventhRowFirstCol, new org.netbeans.lib.awtextra.AbsoluteConstraints(330, 310, -1, -1));
-
-        eighthRowFirstCol.setText("empty");
-        getContentPane().add(eighthRowFirstCol, new org.netbeans.lib.awtextra.AbsoluteConstraints(330, 350, -1, -1));
-
-        ninthRowFirstCol.setText("empty");
-        getContentPane().add(ninthRowFirstCol, new org.netbeans.lib.awtextra.AbsoluteConstraints(330, 400, -1, -1));
-
-        firstRowSecCol.setText("empty");
-        getContentPane().add(firstRowSecCol, new org.netbeans.lib.awtextra.AbsoluteConstraints(400, 30, -1, -1));
-
-        secondRowSecCol.setText("empty");
-        getContentPane().add(secondRowSecCol, new org.netbeans.lib.awtextra.AbsoluteConstraints(400, 70, -1, -1));
-
-        ThirdRowSecCol.setText("empty");
-        getContentPane().add(ThirdRowSecCol, new org.netbeans.lib.awtextra.AbsoluteConstraints(400, 130, -1, -1));
-
-        FourthRowSecCol.setText("empty");
-        getContentPane().add(FourthRowSecCol, new org.netbeans.lib.awtextra.AbsoluteConstraints(400, 190, -1, -1));
-
-        FifthRowSecCol.setText("empty");
-        getContentPane().add(FifthRowSecCol, new org.netbeans.lib.awtextra.AbsoluteConstraints(400, 250, -1, -1));
-
-        SixthRowSecCol.setText("empty");
-        getContentPane().add(SixthRowSecCol, new org.netbeans.lib.awtextra.AbsoluteConstraints(400, 310, -1, -1));
-
-        SeventhRowSecCol.setText("empty");
-        getContentPane().add(SeventhRowSecCol, new org.netbeans.lib.awtextra.AbsoluteConstraints(400, 350, -1, -1));
-
-        EighthRowSecCol.setText("empty");
-        getContentPane().add(EighthRowSecCol, new org.netbeans.lib.awtextra.AbsoluteConstraints(400, 400, -1, -1));
-
-        NinthRowSecCol.setText("empty");
-        getContentPane().add(NinthRowSecCol, new org.netbeans.lib.awtextra.AbsoluteConstraints(400, 430, -1, -1));
-
-        firstRowThirdCol.setText("empty");
-        getContentPane().add(firstRowThirdCol, new org.netbeans.lib.awtextra.AbsoluteConstraints(460, 30, -1, -1));
-
-        secondRowThirdCol.setText("empty");
-        getContentPane().add(secondRowThirdCol, new org.netbeans.lib.awtextra.AbsoluteConstraints(460, 70, -1, -1));
-
-        ThirdRowThirdCol.setText("empty");
-        getContentPane().add(ThirdRowThirdCol, new org.netbeans.lib.awtextra.AbsoluteConstraints(460, 130, -1, -1));
-
-        ForthRowLThirdCol.setText("empty");
-        getContentPane().add(ForthRowLThirdCol, new org.netbeans.lib.awtextra.AbsoluteConstraints(460, 190, -1, -1));
-
-        FifthRowThirdCol.setText("empty");
-        getContentPane().add(FifthRowThirdCol, new org.netbeans.lib.awtextra.AbsoluteConstraints(460, 250, -1, -1));
-
-        SixthRowThirdCol.setText("empty");
-        getContentPane().add(SixthRowThirdCol, new org.netbeans.lib.awtextra.AbsoluteConstraints(460, 310, -1, -1));
-
-        SeventhRowThirdCol.setText("empty");
-        getContentPane().add(SeventhRowThirdCol, new org.netbeans.lib.awtextra.AbsoluteConstraints(460, 350, -1, -1));
-
-        EightRowThirdCol.setText("empty");
-        getContentPane().add(EightRowThirdCol, new org.netbeans.lib.awtextra.AbsoluteConstraints(460, 400, -1, -1));
-
-        NinthRowThirdCol.setText("empty");
-        getContentPane().add(NinthRowThirdCol, new org.netbeans.lib.awtextra.AbsoluteConstraints(460, 430, -1, -1));
-
-        firstRowFourthCol.setText("empty");
-        getContentPane().add(firstRowFourthCol, new org.netbeans.lib.awtextra.AbsoluteConstraints(510, 30, -1, -1));
-
-        secondRowFourthCol.setText("empty");
-        getContentPane().add(secondRowFourthCol, new org.netbeans.lib.awtextra.AbsoluteConstraints(510, 70, -1, -1));
-
-        thirdRowFourthCol.setText("empry");
-        getContentPane().add(thirdRowFourthCol, new org.netbeans.lib.awtextra.AbsoluteConstraints(510, 130, -1, -1));
-
-        fourthRowFourthCol.setText("empty");
-        getContentPane().add(fourthRowFourthCol, new org.netbeans.lib.awtextra.AbsoluteConstraints(510, 190, -1, -1));
-
-        fifthRowFourthCol.setText("empty");
-        getContentPane().add(fifthRowFourthCol, new org.netbeans.lib.awtextra.AbsoluteConstraints(510, 250, -1, -1));
-
-        sixthRowFourthCol.setText("empty");
-        getContentPane().add(sixthRowFourthCol, new org.netbeans.lib.awtextra.AbsoluteConstraints(510, 310, -1, -1));
-
-        seventhRowFourthCol.setText("empty");
-        getContentPane().add(seventhRowFourthCol, new org.netbeans.lib.awtextra.AbsoluteConstraints(510, 350, -1, -1));
-
-        eighthRowFourthCol.setText("empty");
-        getContentPane().add(eighthRowFourthCol, new org.netbeans.lib.awtextra.AbsoluteConstraints(510, 400, -1, -1));
-
-        ninthRowFourthCol.setText("empty");
-        getContentPane().add(ninthRowFourthCol, new org.netbeans.lib.awtextra.AbsoluteConstraints(520, 430, -1, -1));
-
-        firstRowFifthCol.setText("empty");
-        getContentPane().add(firstRowFifthCol, new org.netbeans.lib.awtextra.AbsoluteConstraints(570, 30, -1, -1));
-
-        secondRowFifthCol.setText("emprt");
-        getContentPane().add(secondRowFifthCol, new org.netbeans.lib.awtextra.AbsoluteConstraints(570, 70, -1, -1));
-
-        thirdRowFifthCol.setText("empty");
-        getContentPane().add(thirdRowFifthCol, new org.netbeans.lib.awtextra.AbsoluteConstraints(570, 130, -1, -1));
-
-        fourthRowFifthCol.setText("empty");
-        getContentPane().add(fourthRowFifthCol, new org.netbeans.lib.awtextra.AbsoluteConstraints(570, 190, -1, -1));
-
-        fifthRowFifthCol.setText("empty");
-        getContentPane().add(fifthRowFifthCol, new org.netbeans.lib.awtextra.AbsoluteConstraints(560, 250, -1, -1));
-
-        sixthRowFifthCol.setText("empty");
-        getContentPane().add(sixthRowFifthCol, new org.netbeans.lib.awtextra.AbsoluteConstraints(570, 310, -1, -1));
-
-        seventhRowFifthCol.setText("emprt");
-        getContentPane().add(seventhRowFifthCol, new org.netbeans.lib.awtextra.AbsoluteConstraints(570, 350, -1, -1));
-
-        eigthRowFifthCol.setText("empty");
-        getContentPane().add(eigthRowFifthCol, new org.netbeans.lib.awtextra.AbsoluteConstraints(570, 400, -1, -1));
-
-        ninthRowFifthCol.setText("empty");
-        getContentPane().add(ninthRowFifthCol, new org.netbeans.lib.awtextra.AbsoluteConstraints(570, 430, -1, -1));
-
-        firstRowSixthCol.setText("empty");
-        getContentPane().add(firstRowSixthCol, new org.netbeans.lib.awtextra.AbsoluteConstraints(630, 30, -1, -1));
-
-        secondRowSixthCol.setText("empty");
-        getContentPane().add(secondRowSixthCol, new org.netbeans.lib.awtextra.AbsoluteConstraints(630, 70, -1, -1));
-
-        thirdRowSixthCol.setText("empty");
-        getContentPane().add(thirdRowSixthCol, new org.netbeans.lib.awtextra.AbsoluteConstraints(630, 130, -1, -1));
-
-        fourthRowSixthCol.setText("empty");
-        getContentPane().add(fourthRowSixthCol, new org.netbeans.lib.awtextra.AbsoluteConstraints(630, 190, -1, -1));
-
-        fifthRowSixthCol.setText("empty");
-        getContentPane().add(fifthRowSixthCol, new org.netbeans.lib.awtextra.AbsoluteConstraints(630, 250, -1, -1));
-
-        sixthRowSixthCol.setText("empty");
-        getContentPane().add(sixthRowSixthCol, new org.netbeans.lib.awtextra.AbsoluteConstraints(630, 310, -1, -1));
-
-        seventhRowSixthCol.setText("empty");
-        getContentPane().add(seventhRowSixthCol, new org.netbeans.lib.awtextra.AbsoluteConstraints(630, 350, -1, -1));
-
-        eighthRowSixthCol.setText("empty");
-        getContentPane().add(eighthRowSixthCol, new org.netbeans.lib.awtextra.AbsoluteConstraints(630, 400, -1, -1));
-
-        ninthRowSixthCol.setText("empty");
-        getContentPane().add(ninthRowSixthCol, new org.netbeans.lib.awtextra.AbsoluteConstraints(630, 430, -1, -1));
-
-        firstRowSeventhCol.setText("empty");
-        getContentPane().add(firstRowSeventhCol, new org.netbeans.lib.awtextra.AbsoluteConstraints(690, 30, -1, -1));
-
-        secondRowSeventhCol.setText("empty");
-        getContentPane().add(secondRowSeventhCol, new org.netbeans.lib.awtextra.AbsoluteConstraints(690, 70, -1, -1));
-
-        thirdRowSeventhCol.setText("empty");
-        getContentPane().add(thirdRowSeventhCol, new org.netbeans.lib.awtextra.AbsoluteConstraints(690, 130, -1, -1));
-
-        fourthRowSeventhCol.setText("empty");
-        getContentPane().add(fourthRowSeventhCol, new org.netbeans.lib.awtextra.AbsoluteConstraints(690, 190, -1, -1));
-
-        fifthRowSeventhCol.setText("empty");
-        getContentPane().add(fifthRowSeventhCol, new org.netbeans.lib.awtextra.AbsoluteConstraints(690, 250, -1, -1));
-
-        sixthRowSeventhCol.setText("empty");
-        getContentPane().add(sixthRowSeventhCol, new org.netbeans.lib.awtextra.AbsoluteConstraints(690, 310, -1, -1));
-
-        seventhRowSeventhCol.setText("empty");
-        getContentPane().add(seventhRowSeventhCol, new org.netbeans.lib.awtextra.AbsoluteConstraints(690, 350, -1, -1));
-
-        eightRowSeventhCol.setText("empty");
-        getContentPane().add(eightRowSeventhCol, new org.netbeans.lib.awtextra.AbsoluteConstraints(690, 400, -1, -1));
-
-        ninthRowSeventhCol.setText("empty");
-        getContentPane().add(ninthRowSeventhCol, new org.netbeans.lib.awtextra.AbsoluteConstraints(690, 430, -1, -1));
-
-        firstRowEighthCol.setText("empty");
-        getContentPane().add(firstRowEighthCol, new org.netbeans.lib.awtextra.AbsoluteConstraints(750, 30, -1, -1));
-
-        secondRowEighthCol.setText("empty");
-        getContentPane().add(secondRowEighthCol, new org.netbeans.lib.awtextra.AbsoluteConstraints(750, 70, -1, -1));
-
-        thirdRowEighthCol.setText("empty");
-        getContentPane().add(thirdRowEighthCol, new org.netbeans.lib.awtextra.AbsoluteConstraints(750, 130, -1, -1));
-
-        forthRowEightCol.setText("empty");
-        getContentPane().add(forthRowEightCol, new org.netbeans.lib.awtextra.AbsoluteConstraints(750, 190, -1, -1));
-
-        fifthRowEightCol.setText("empty");
-        getContentPane().add(fifthRowEightCol, new org.netbeans.lib.awtextra.AbsoluteConstraints(750, 250, -1, -1));
-
-        sixthRowEightCol.setText("empty");
-        getContentPane().add(sixthRowEightCol, new org.netbeans.lib.awtextra.AbsoluteConstraints(750, 310, -1, -1));
-
-        seventhRowEightCol.setText("empt");
-        getContentPane().add(seventhRowEightCol, new org.netbeans.lib.awtextra.AbsoluteConstraints(750, 350, -1, -1));
-
-        eighthRowEighthCol.setText("empty");
-        getContentPane().add(eighthRowEighthCol, new org.netbeans.lib.awtextra.AbsoluteConstraints(750, 400, -1, -1));
-
-        nighthRowEighthCol.setText("empty");
-        getContentPane().add(nighthRowEighthCol, new org.netbeans.lib.awtextra.AbsoluteConstraints(750, 430, -1, -1));
-
-        firstRowNinthCol.setText("empty");
-        getContentPane().add(firstRowNinthCol, new org.netbeans.lib.awtextra.AbsoluteConstraints(810, 30, -1, -1));
-
-        secondRowNinthCol.setText("empty");
-        getContentPane().add(secondRowNinthCol, new org.netbeans.lib.awtextra.AbsoluteConstraints(810, 70, -1, -1));
-
-        thirdRowNinthCol.setText("empty");
-        getContentPane().add(thirdRowNinthCol, new org.netbeans.lib.awtextra.AbsoluteConstraints(810, 130, -1, -1));
-
-        forthRowNinthCol.setText("empty");
-        getContentPane().add(forthRowNinthCol, new org.netbeans.lib.awtextra.AbsoluteConstraints(810, 190, -1, -1));
-
-        fifthRowNinthCol.setText("empty");
-        getContentPane().add(fifthRowNinthCol, new org.netbeans.lib.awtextra.AbsoluteConstraints(810, 250, -1, -1));
-
-        sixthRowNinthCol.setText("empty");
-        getContentPane().add(sixthRowNinthCol, new org.netbeans.lib.awtextra.AbsoluteConstraints(810, 310, -1, -1));
-
-        seventhRowNinthCol.setText("empty");
-        getContentPane().add(seventhRowNinthCol, new org.netbeans.lib.awtextra.AbsoluteConstraints(810, 350, -1, -1));
-
-        eighthRowNinthCol.setText("empty");
-        getContentPane().add(eighthRowNinthCol, new org.netbeans.lib.awtextra.AbsoluteConstraints(810, 400, -1, -1));
-
-        ninthRowNinthCol.setText("empty");
-        getContentPane().add(ninthRowNinthCol, new org.netbeans.lib.awtextra.AbsoluteConstraints(810, 430, -1, -1));
+        getContentPane().add(firstPlayerName, new org.netbeans.lib.awtextra.AbsoluteConstraints(140, 160, -1, -1));
+
+        firstColfirRow.setFont(new java.awt.Font("Helvetica Neue", 1, 13)); // NOI18N
+        firstColfirRow.setForeground(new java.awt.Color(255, 255, 255));
+        firstColfirRow.setText("E");
+        getContentPane().add(firstColfirRow, new org.netbeans.lib.awtextra.AbsoluteConstraints(320, 40, -1, -1));
+
+        secondRowFirstCol.setFont(new java.awt.Font("Helvetica Neue", 1, 13)); // NOI18N
+        secondRowFirstCol.setForeground(new java.awt.Color(255, 255, 255));
+        secondRowFirstCol.setText("E");
+        getContentPane().add(secondRowFirstCol, new org.netbeans.lib.awtextra.AbsoluteConstraints(318, 80, 10, -1));
+
+        thirdRowFirstCol.setFont(new java.awt.Font("Helvetica Neue", 1, 13)); // NOI18N
+        thirdRowFirstCol.setForeground(new java.awt.Color(255, 255, 255));
+        thirdRowFirstCol.setText("E");
+        getContentPane().add(thirdRowFirstCol, new org.netbeans.lib.awtextra.AbsoluteConstraints(318, 140, 10, -1));
+
+        fourthRowFirstCol.setFont(new java.awt.Font("Helvetica Neue", 1, 13)); // NOI18N
+        fourthRowFirstCol.setForeground(new java.awt.Color(255, 255, 255));
+        fourthRowFirstCol.setText("E");
+        getContentPane().add(fourthRowFirstCol, new org.netbeans.lib.awtextra.AbsoluteConstraints(320, 200, 20, -1));
+
+        fifthRowFirstCol.setFont(new java.awt.Font("Helvetica Neue", 1, 13)); // NOI18N
+        fifthRowFirstCol.setForeground(new java.awt.Color(255, 255, 255));
+        fifthRowFirstCol.setText("E");
+        getContentPane().add(fifthRowFirstCol, new org.netbeans.lib.awtextra.AbsoluteConstraints(320, 250, -1, -1));
+
+        sixthRowFirstCol.setFont(new java.awt.Font("Helvetica Neue", 1, 13)); // NOI18N
+        sixthRowFirstCol.setForeground(new java.awt.Color(255, 255, 255));
+        sixthRowFirstCol.setText("E");
+        getContentPane().add(sixthRowFirstCol, new org.netbeans.lib.awtextra.AbsoluteConstraints(320, 420, -1, -1));
+
+        seventhRowFirstCol.setFont(new java.awt.Font("Helvetica Neue", 1, 13)); // NOI18N
+        seventhRowFirstCol.setForeground(new java.awt.Color(255, 255, 255));
+        seventhRowFirstCol.setText("E");
+        getContentPane().add(seventhRowFirstCol, new org.netbeans.lib.awtextra.AbsoluteConstraints(320, 310, -1, -1));
+
+        eighthRowFirstCol.setFont(new java.awt.Font("Helvetica Neue", 1, 13)); // NOI18N
+        eighthRowFirstCol.setForeground(new java.awt.Color(255, 255, 255));
+        eighthRowFirstCol.setText("E");
+        getContentPane().add(eighthRowFirstCol, new org.netbeans.lib.awtextra.AbsoluteConstraints(318, 350, 20, 20));
+
+        ninthRowFirstCol.setFont(new java.awt.Font("Helvetica Neue", 1, 13)); // NOI18N
+        ninthRowFirstCol.setForeground(new java.awt.Color(255, 255, 255));
+        ninthRowFirstCol.setText("E");
+        getContentPane().add(ninthRowFirstCol, new org.netbeans.lib.awtextra.AbsoluteConstraints(320, 390, -1, -1));
+
+        firstRowSecCol.setFont(new java.awt.Font("Helvetica Neue", 1, 13)); // NOI18N
+        firstRowSecCol.setForeground(new java.awt.Color(255, 255, 255));
+        firstRowSecCol.setText("E");
+        getContentPane().add(firstRowSecCol, new org.netbeans.lib.awtextra.AbsoluteConstraints(380, 40, -1, -1));
+
+        secondRowSecCol.setFont(new java.awt.Font("Helvetica Neue", 1, 13)); // NOI18N
+        secondRowSecCol.setForeground(new java.awt.Color(255, 255, 255));
+        secondRowSecCol.setText("E");
+        getContentPane().add(secondRowSecCol, new org.netbeans.lib.awtextra.AbsoluteConstraints(380, 90, -1, -1));
+
+        ThirdRowSecCol.setFont(new java.awt.Font("Helvetica Neue", 1, 13)); // NOI18N
+        ThirdRowSecCol.setForeground(new java.awt.Color(255, 255, 255));
+        ThirdRowSecCol.setText("E");
+        getContentPane().add(ThirdRowSecCol, new org.netbeans.lib.awtextra.AbsoluteConstraints(380, 140, -1, -1));
+
+        FourthRowSecCol.setFont(new java.awt.Font("Helvetica Neue", 1, 13)); // NOI18N
+        FourthRowSecCol.setForeground(new java.awt.Color(255, 255, 255));
+        FourthRowSecCol.setText("E");
+        getContentPane().add(FourthRowSecCol, new org.netbeans.lib.awtextra.AbsoluteConstraints(380, 200, -1, -1));
+
+        FifthRowSecCol.setFont(new java.awt.Font("Helvetica Neue", 1, 13)); // NOI18N
+        FifthRowSecCol.setForeground(new java.awt.Color(255, 255, 255));
+        FifthRowSecCol.setText("E");
+        getContentPane().add(FifthRowSecCol, new org.netbeans.lib.awtextra.AbsoluteConstraints(380, 250, -1, -1));
+
+        SixthRowSecCol.setFont(new java.awt.Font("Helvetica Neue", 1, 13)); // NOI18N
+        SixthRowSecCol.setForeground(new java.awt.Color(255, 255, 255));
+        SixthRowSecCol.setText("E");
+        getContentPane().add(SixthRowSecCol, new org.netbeans.lib.awtextra.AbsoluteConstraints(380, 300, 20, 20));
+
+        SeventhRowSecCol.setFont(new java.awt.Font("Helvetica Neue", 1, 13)); // NOI18N
+        SeventhRowSecCol.setForeground(new java.awt.Color(255, 255, 255));
+        SeventhRowSecCol.setText("E");
+        getContentPane().add(SeventhRowSecCol, new org.netbeans.lib.awtextra.AbsoluteConstraints(380, 350, -1, -1));
+
+        EighthRowSecCol.setFont(new java.awt.Font("Helvetica Neue", 1, 13)); // NOI18N
+        EighthRowSecCol.setForeground(new java.awt.Color(255, 255, 255));
+        EighthRowSecCol.setText("E");
+        getContentPane().add(EighthRowSecCol, new org.netbeans.lib.awtextra.AbsoluteConstraints(380, 390, -1, -1));
+
+        NinthRowSecCol.setFont(new java.awt.Font("Helvetica Neue", 1, 13)); // NOI18N
+        NinthRowSecCol.setForeground(new java.awt.Color(255, 255, 255));
+        NinthRowSecCol.setText("E");
+        getContentPane().add(NinthRowSecCol, new org.netbeans.lib.awtextra.AbsoluteConstraints(380, 420, -1, -1));
+
+        firstRowThirdCol.setFont(new java.awt.Font("Helvetica Neue", 1, 13)); // NOI18N
+        firstRowThirdCol.setForeground(new java.awt.Color(255, 255, 255));
+        firstRowThirdCol.setText("E");
+        getContentPane().add(firstRowThirdCol, new org.netbeans.lib.awtextra.AbsoluteConstraints(440, 40, -1, -1));
+
+        secondRowThirdCol.setFont(new java.awt.Font("Helvetica Neue", 1, 13)); // NOI18N
+        secondRowThirdCol.setForeground(new java.awt.Color(255, 255, 255));
+        secondRowThirdCol.setText("E");
+        getContentPane().add(secondRowThirdCol, new org.netbeans.lib.awtextra.AbsoluteConstraints(430, 80, 20, 30));
+
+        ThirdRowThirdCol.setFont(new java.awt.Font("Helvetica Neue", 1, 13)); // NOI18N
+        ThirdRowThirdCol.setForeground(new java.awt.Color(255, 255, 255));
+        ThirdRowThirdCol.setText("E");
+        getContentPane().add(ThirdRowThirdCol, new org.netbeans.lib.awtextra.AbsoluteConstraints(430, 140, -1, -1));
+
+        ForthRowLThirdCol.setFont(new java.awt.Font("Helvetica Neue", 1, 13)); // NOI18N
+        ForthRowLThirdCol.setForeground(new java.awt.Color(255, 255, 255));
+        ForthRowLThirdCol.setText("E");
+        getContentPane().add(ForthRowLThirdCol, new org.netbeans.lib.awtextra.AbsoluteConstraints(430, 200, -1, -1));
+
+        FifthRowThirdCol.setFont(new java.awt.Font("Helvetica Neue", 1, 13)); // NOI18N
+        FifthRowThirdCol.setForeground(new java.awt.Color(255, 255, 255));
+        FifthRowThirdCol.setText("E");
+        getContentPane().add(FifthRowThirdCol, new org.netbeans.lib.awtextra.AbsoluteConstraints(430, 250, -1, -1));
+
+        SixthRowThirdCol.setFont(new java.awt.Font("Helvetica Neue", 1, 13)); // NOI18N
+        SixthRowThirdCol.setForeground(new java.awt.Color(255, 255, 255));
+        SixthRowThirdCol.setText("E");
+        getContentPane().add(SixthRowThirdCol, new org.netbeans.lib.awtextra.AbsoluteConstraints(430, 300, -1, -1));
+
+        SeventhRowThirdCol.setFont(new java.awt.Font("Helvetica Neue", 1, 13)); // NOI18N
+        SeventhRowThirdCol.setForeground(new java.awt.Color(255, 255, 255));
+        SeventhRowThirdCol.setText("E");
+        getContentPane().add(SeventhRowThirdCol, new org.netbeans.lib.awtextra.AbsoluteConstraints(430, 350, -1, -1));
+
+        EightRowThirdCol.setFont(new java.awt.Font("Helvetica Neue", 1, 13)); // NOI18N
+        EightRowThirdCol.setForeground(new java.awt.Color(255, 255, 255));
+        EightRowThirdCol.setText("E");
+        getContentPane().add(EightRowThirdCol, new org.netbeans.lib.awtextra.AbsoluteConstraints(430, 390, -1, -1));
+
+        NinthRowThirdCol.setFont(new java.awt.Font("Helvetica Neue", 1, 13)); // NOI18N
+        NinthRowThirdCol.setForeground(new java.awt.Color(255, 255, 255));
+        NinthRowThirdCol.setText("E");
+        getContentPane().add(NinthRowThirdCol, new org.netbeans.lib.awtextra.AbsoluteConstraints(430, 420, -1, -1));
+
+        firstRowFourthCol.setFont(new java.awt.Font("Helvetica Neue", 1, 13)); // NOI18N
+        firstRowFourthCol.setForeground(new java.awt.Color(255, 255, 255));
+        firstRowFourthCol.setText("E");
+        getContentPane().add(firstRowFourthCol, new org.netbeans.lib.awtextra.AbsoluteConstraints(480, 40, -1, -1));
+
+        secondRowFourthCol.setFont(new java.awt.Font("Helvetica Neue", 1, 13)); // NOI18N
+        secondRowFourthCol.setForeground(new java.awt.Color(255, 255, 255));
+        secondRowFourthCol.setText("E");
+        getContentPane().add(secondRowFourthCol, new org.netbeans.lib.awtextra.AbsoluteConstraints(480, 80, -1, -1));
+
+        thirdRowFourthCol.setFont(new java.awt.Font("Helvetica Neue", 1, 13)); // NOI18N
+        thirdRowFourthCol.setForeground(new java.awt.Color(255, 255, 255));
+        thirdRowFourthCol.setText("E");
+        getContentPane().add(thirdRowFourthCol, new org.netbeans.lib.awtextra.AbsoluteConstraints(480, 140, -1, -1));
+
+        fourthRowFourthCol.setFont(new java.awt.Font("Helvetica Neue", 1, 13)); // NOI18N
+        fourthRowFourthCol.setForeground(new java.awt.Color(255, 255, 255));
+        fourthRowFourthCol.setText("E");
+        getContentPane().add(fourthRowFourthCol, new org.netbeans.lib.awtextra.AbsoluteConstraints(480, 200, -1, -1));
+
+        fifthRowFourthCol.setFont(new java.awt.Font("Helvetica Neue", 1, 13)); // NOI18N
+        fifthRowFourthCol.setForeground(new java.awt.Color(255, 255, 255));
+        fifthRowFourthCol.setText("E");
+        getContentPane().add(fifthRowFourthCol, new org.netbeans.lib.awtextra.AbsoluteConstraints(480, 250, -1, -1));
+
+        sixthRowFourthCol.setFont(new java.awt.Font("Helvetica Neue", 1, 13)); // NOI18N
+        sixthRowFourthCol.setForeground(new java.awt.Color(255, 255, 255));
+        sixthRowFourthCol.setText("E");
+        getContentPane().add(sixthRowFourthCol, new org.netbeans.lib.awtextra.AbsoluteConstraints(480, 300, -1, -1));
+
+        seventhRowFourthCol.setFont(new java.awt.Font("Helvetica Neue", 1, 13)); // NOI18N
+        seventhRowFourthCol.setForeground(new java.awt.Color(255, 255, 255));
+        seventhRowFourthCol.setText("E");
+        getContentPane().add(seventhRowFourthCol, new org.netbeans.lib.awtextra.AbsoluteConstraints(480, 350, -1, -1));
+
+        eighthRowFourthCol.setFont(new java.awt.Font("Helvetica Neue", 1, 13)); // NOI18N
+        eighthRowFourthCol.setForeground(new java.awt.Color(255, 255, 255));
+        eighthRowFourthCol.setText("E");
+        getContentPane().add(eighthRowFourthCol, new org.netbeans.lib.awtextra.AbsoluteConstraints(480, 390, -1, -1));
+
+        ninthRowFourthCol.setFont(new java.awt.Font("Helvetica Neue", 1, 13)); // NOI18N
+        ninthRowFourthCol.setForeground(new java.awt.Color(255, 255, 255));
+        ninthRowFourthCol.setText("E");
+        getContentPane().add(ninthRowFourthCol, new org.netbeans.lib.awtextra.AbsoluteConstraints(480, 420, -1, -1));
+
+        firstRowFifthCol.setFont(new java.awt.Font("Helvetica Neue", 1, 13)); // NOI18N
+        firstRowFifthCol.setForeground(new java.awt.Color(255, 255, 255));
+        firstRowFifthCol.setText("E");
+        getContentPane().add(firstRowFifthCol, new org.netbeans.lib.awtextra.AbsoluteConstraints(530, 40, -1, -1));
+
+        secondRowFifthCol.setFont(new java.awt.Font("Helvetica Neue", 1, 13)); // NOI18N
+        secondRowFifthCol.setForeground(new java.awt.Color(255, 255, 255));
+        secondRowFifthCol.setText("E");
+        getContentPane().add(secondRowFifthCol, new org.netbeans.lib.awtextra.AbsoluteConstraints(530, 90, -1, -1));
+
+        thirdRowFifthCol.setFont(new java.awt.Font("Helvetica Neue", 1, 13)); // NOI18N
+        thirdRowFifthCol.setForeground(new java.awt.Color(255, 255, 255));
+        thirdRowFifthCol.setText("E");
+        getContentPane().add(thirdRowFifthCol, new org.netbeans.lib.awtextra.AbsoluteConstraints(530, 140, -1, -1));
+
+        fourthRowFifthCol.setFont(new java.awt.Font("Helvetica Neue", 1, 13)); // NOI18N
+        fourthRowFifthCol.setForeground(new java.awt.Color(255, 255, 255));
+        fourthRowFifthCol.setText("E");
+        getContentPane().add(fourthRowFifthCol, new org.netbeans.lib.awtextra.AbsoluteConstraints(530, 200, -1, -1));
+
+        fifthRowFifthCol.setFont(new java.awt.Font("Helvetica Neue", 1, 13)); // NOI18N
+        fifthRowFifthCol.setForeground(new java.awt.Color(255, 255, 255));
+        fifthRowFifthCol.setText("E");
+        getContentPane().add(fifthRowFifthCol, new org.netbeans.lib.awtextra.AbsoluteConstraints(530, 250, -1, -1));
+
+        sixthRowFifthCol.setFont(new java.awt.Font("Helvetica Neue", 1, 13)); // NOI18N
+        sixthRowFifthCol.setForeground(new java.awt.Color(255, 255, 255));
+        sixthRowFifthCol.setText("E");
+        getContentPane().add(sixthRowFifthCol, new org.netbeans.lib.awtextra.AbsoluteConstraints(530, 300, -1, -1));
+
+        seventhRowFifthCol.setFont(new java.awt.Font("Helvetica Neue", 1, 13)); // NOI18N
+        seventhRowFifthCol.setForeground(new java.awt.Color(255, 255, 255));
+        seventhRowFifthCol.setText("E");
+        getContentPane().add(seventhRowFifthCol, new org.netbeans.lib.awtextra.AbsoluteConstraints(530, 350, -1, -1));
+
+        eigthRowFifthCol.setFont(new java.awt.Font("Helvetica Neue", 1, 13)); // NOI18N
+        eigthRowFifthCol.setForeground(new java.awt.Color(255, 255, 255));
+        eigthRowFifthCol.setText("E");
+        getContentPane().add(eigthRowFifthCol, new org.netbeans.lib.awtextra.AbsoluteConstraints(530, 390, -1, -1));
+
+        ninthRowFifthCol.setFont(new java.awt.Font("Helvetica Neue", 1, 13)); // NOI18N
+        ninthRowFifthCol.setForeground(new java.awt.Color(255, 255, 255));
+        ninthRowFifthCol.setText("E");
+        getContentPane().add(ninthRowFifthCol, new org.netbeans.lib.awtextra.AbsoluteConstraints(530, 420, -1, -1));
+
+        firstRowSixthCol.setFont(new java.awt.Font("Helvetica Neue", 1, 13)); // NOI18N
+        firstRowSixthCol.setForeground(new java.awt.Color(255, 255, 255));
+        firstRowSixthCol.setText("E");
+        getContentPane().add(firstRowSixthCol, new org.netbeans.lib.awtextra.AbsoluteConstraints(590, 40, -1, -1));
+
+        secondRowSixthCol.setFont(new java.awt.Font("Helvetica Neue", 1, 13)); // NOI18N
+        secondRowSixthCol.setForeground(new java.awt.Color(255, 255, 255));
+        secondRowSixthCol.setText("E");
+        getContentPane().add(secondRowSixthCol, new org.netbeans.lib.awtextra.AbsoluteConstraints(590, 90, -1, -1));
+
+        thirdRowSixthCol.setFont(new java.awt.Font("Helvetica Neue", 1, 13)); // NOI18N
+        thirdRowSixthCol.setForeground(new java.awt.Color(255, 255, 255));
+        thirdRowSixthCol.setText("E");
+        getContentPane().add(thirdRowSixthCol, new org.netbeans.lib.awtextra.AbsoluteConstraints(590, 140, -1, -1));
+
+        fourthRowSixthCol.setFont(new java.awt.Font("Helvetica Neue", 1, 13)); // NOI18N
+        fourthRowSixthCol.setForeground(new java.awt.Color(255, 255, 255));
+        fourthRowSixthCol.setText("E");
+        getContentPane().add(fourthRowSixthCol, new org.netbeans.lib.awtextra.AbsoluteConstraints(590, 200, -1, -1));
+
+        fifthRowSixthCol.setFont(new java.awt.Font("Helvetica Neue", 1, 13)); // NOI18N
+        fifthRowSixthCol.setForeground(new java.awt.Color(255, 255, 255));
+        fifthRowSixthCol.setText("E");
+        getContentPane().add(fifthRowSixthCol, new org.netbeans.lib.awtextra.AbsoluteConstraints(590, 250, -1, -1));
+
+        sixthRowSixthCol.setFont(new java.awt.Font("Helvetica Neue", 1, 13)); // NOI18N
+        sixthRowSixthCol.setForeground(new java.awt.Color(255, 255, 255));
+        sixthRowSixthCol.setText("E");
+        getContentPane().add(sixthRowSixthCol, new org.netbeans.lib.awtextra.AbsoluteConstraints(590, 300, -1, -1));
+
+        seventhRowSixthCol.setFont(new java.awt.Font("Helvetica Neue", 1, 13)); // NOI18N
+        seventhRowSixthCol.setForeground(new java.awt.Color(255, 255, 255));
+        seventhRowSixthCol.setText("E");
+        getContentPane().add(seventhRowSixthCol, new org.netbeans.lib.awtextra.AbsoluteConstraints(590, 350, -1, -1));
+
+        eighthRowSixthCol.setFont(new java.awt.Font("Helvetica Neue", 1, 13)); // NOI18N
+        eighthRowSixthCol.setForeground(new java.awt.Color(255, 255, 255));
+        eighthRowSixthCol.setText("E");
+        getContentPane().add(eighthRowSixthCol, new org.netbeans.lib.awtextra.AbsoluteConstraints(590, 390, -1, -1));
+
+        ninthRowSixthCol.setFont(new java.awt.Font("Helvetica Neue", 1, 13)); // NOI18N
+        ninthRowSixthCol.setForeground(new java.awt.Color(255, 255, 255));
+        ninthRowSixthCol.setText("E");
+        getContentPane().add(ninthRowSixthCol, new org.netbeans.lib.awtextra.AbsoluteConstraints(590, 420, -1, -1));
+
+        firstRowSeventhCol.setFont(new java.awt.Font("Helvetica Neue", 1, 13)); // NOI18N
+        firstRowSeventhCol.setForeground(new java.awt.Color(255, 255, 255));
+        firstRowSeventhCol.setText("E");
+        getContentPane().add(firstRowSeventhCol, new org.netbeans.lib.awtextra.AbsoluteConstraints(650, 40, -1, -1));
+
+        secondRowSeventhCol.setFont(new java.awt.Font("Helvetica Neue", 1, 13)); // NOI18N
+        secondRowSeventhCol.setForeground(new java.awt.Color(255, 255, 255));
+        secondRowSeventhCol.setText("E");
+        getContentPane().add(secondRowSeventhCol, new org.netbeans.lib.awtextra.AbsoluteConstraints(640, 90, -1, -1));
+
+        thirdRowSeventhCol.setFont(new java.awt.Font("Helvetica Neue", 1, 13)); // NOI18N
+        thirdRowSeventhCol.setForeground(new java.awt.Color(255, 255, 255));
+        thirdRowSeventhCol.setText("E");
+        getContentPane().add(thirdRowSeventhCol, new org.netbeans.lib.awtextra.AbsoluteConstraints(650, 140, -1, -1));
+
+        fourthRowSeventhCol.setFont(new java.awt.Font("Helvetica Neue", 1, 13)); // NOI18N
+        fourthRowSeventhCol.setForeground(new java.awt.Color(255, 255, 255));
+        fourthRowSeventhCol.setText("E");
+        getContentPane().add(fourthRowSeventhCol, new org.netbeans.lib.awtextra.AbsoluteConstraints(650, 200, -1, -1));
+
+        fifthRowSeventhCol.setFont(new java.awt.Font("Helvetica Neue", 1, 13)); // NOI18N
+        fifthRowSeventhCol.setForeground(new java.awt.Color(255, 255, 255));
+        fifthRowSeventhCol.setText("E");
+        getContentPane().add(fifthRowSeventhCol, new org.netbeans.lib.awtextra.AbsoluteConstraints(640, 250, -1, -1));
+
+        sixthRowSeventhCol.setFont(new java.awt.Font("Helvetica Neue", 1, 13)); // NOI18N
+        sixthRowSeventhCol.setForeground(new java.awt.Color(255, 255, 255));
+        sixthRowSeventhCol.setText("E");
+        getContentPane().add(sixthRowSeventhCol, new org.netbeans.lib.awtextra.AbsoluteConstraints(640, 300, -1, -1));
+
+        seventhRowSeventhCol.setFont(new java.awt.Font("Helvetica Neue", 1, 13)); // NOI18N
+        seventhRowSeventhCol.setForeground(new java.awt.Color(255, 255, 255));
+        seventhRowSeventhCol.setText("E");
+        getContentPane().add(seventhRowSeventhCol, new org.netbeans.lib.awtextra.AbsoluteConstraints(640, 350, -1, -1));
+
+        eightRowSeventhCol.setFont(new java.awt.Font("Helvetica Neue", 1, 13)); // NOI18N
+        eightRowSeventhCol.setForeground(new java.awt.Color(255, 255, 255));
+        eightRowSeventhCol.setText("E");
+        getContentPane().add(eightRowSeventhCol, new org.netbeans.lib.awtextra.AbsoluteConstraints(650, 390, -1, -1));
+
+        ninthRowSeventhCol.setFont(new java.awt.Font("Helvetica Neue", 1, 13)); // NOI18N
+        ninthRowSeventhCol.setForeground(new java.awt.Color(255, 255, 255));
+        ninthRowSeventhCol.setText("E");
+        getContentPane().add(ninthRowSeventhCol, new org.netbeans.lib.awtextra.AbsoluteConstraints(650, 420, -1, -1));
+
+        firstRowEighthCol.setFont(new java.awt.Font("Helvetica Neue", 1, 13)); // NOI18N
+        firstRowEighthCol.setForeground(new java.awt.Color(255, 255, 255));
+        firstRowEighthCol.setText("E");
+        getContentPane().add(firstRowEighthCol, new org.netbeans.lib.awtextra.AbsoluteConstraints(700, 40, -1, -1));
+
+        secondRowEighthCol.setFont(new java.awt.Font("Helvetica Neue", 1, 13)); // NOI18N
+        secondRowEighthCol.setForeground(new java.awt.Color(255, 255, 255));
+        secondRowEighthCol.setText("E");
+        getContentPane().add(secondRowEighthCol, new org.netbeans.lib.awtextra.AbsoluteConstraints(700, 90, -1, -1));
+
+        thirdRowEighthCol.setFont(new java.awt.Font("Helvetica Neue", 1, 13)); // NOI18N
+        thirdRowEighthCol.setForeground(new java.awt.Color(255, 255, 255));
+        thirdRowEighthCol.setText("E");
+        getContentPane().add(thirdRowEighthCol, new org.netbeans.lib.awtextra.AbsoluteConstraints(700, 140, -1, -1));
+
+        forthRowEightCol.setFont(new java.awt.Font("Helvetica Neue", 1, 13)); // NOI18N
+        forthRowEightCol.setForeground(new java.awt.Color(255, 255, 255));
+        forthRowEightCol.setText("E");
+        getContentPane().add(forthRowEightCol, new org.netbeans.lib.awtextra.AbsoluteConstraints(700, 200, -1, -1));
+
+        fifthRowEightCol.setFont(new java.awt.Font("Helvetica Neue", 1, 13)); // NOI18N
+        fifthRowEightCol.setForeground(new java.awt.Color(255, 255, 255));
+        fifthRowEightCol.setText("E");
+        getContentPane().add(fifthRowEightCol, new org.netbeans.lib.awtextra.AbsoluteConstraints(700, 250, -1, -1));
+
+        sixthRowEightCol.setFont(new java.awt.Font("Helvetica Neue", 1, 13)); // NOI18N
+        sixthRowEightCol.setForeground(new java.awt.Color(255, 255, 255));
+        sixthRowEightCol.setText("E");
+        getContentPane().add(sixthRowEightCol, new org.netbeans.lib.awtextra.AbsoluteConstraints(700, 300, -1, -1));
+
+        seventhRowEightCol.setFont(new java.awt.Font("Helvetica Neue", 1, 13)); // NOI18N
+        seventhRowEightCol.setForeground(new java.awt.Color(255, 255, 255));
+        seventhRowEightCol.setText("E");
+        getContentPane().add(seventhRowEightCol, new org.netbeans.lib.awtextra.AbsoluteConstraints(700, 350, -1, -1));
+
+        eighthRowEighthCol.setFont(new java.awt.Font("Helvetica Neue", 1, 13)); // NOI18N
+        eighthRowEighthCol.setForeground(new java.awt.Color(255, 255, 255));
+        eighthRowEighthCol.setText("E");
+        getContentPane().add(eighthRowEighthCol, new org.netbeans.lib.awtextra.AbsoluteConstraints(700, 390, -1, -1));
+
+        nighthRowEighthCol.setFont(new java.awt.Font("Helvetica Neue", 1, 13)); // NOI18N
+        nighthRowEighthCol.setForeground(new java.awt.Color(255, 255, 255));
+        nighthRowEighthCol.setText("E");
+        getContentPane().add(nighthRowEighthCol, new org.netbeans.lib.awtextra.AbsoluteConstraints(700, 420, -1, -1));
+
+        firstRowNinthCol.setFont(new java.awt.Font("Helvetica Neue", 1, 13)); // NOI18N
+        firstRowNinthCol.setForeground(new java.awt.Color(255, 255, 255));
+        firstRowNinthCol.setText("E");
+        getContentPane().add(firstRowNinthCol, new org.netbeans.lib.awtextra.AbsoluteConstraints(760, 50, -1, -1));
+
+        secondRowNinthCol.setFont(new java.awt.Font("Helvetica Neue", 1, 13)); // NOI18N
+        secondRowNinthCol.setForeground(new java.awt.Color(255, 255, 255));
+        secondRowNinthCol.setText("E");
+        getContentPane().add(secondRowNinthCol, new org.netbeans.lib.awtextra.AbsoluteConstraints(750, 90, -1, -1));
+
+        thirdRowNinthCol.setFont(new java.awt.Font("Helvetica Neue", 1, 13)); // NOI18N
+        thirdRowNinthCol.setForeground(new java.awt.Color(255, 255, 255));
+        thirdRowNinthCol.setText("E");
+        getContentPane().add(thirdRowNinthCol, new org.netbeans.lib.awtextra.AbsoluteConstraints(760, 140, -1, -1));
+
+        forthRowNinthCol.setFont(new java.awt.Font("Helvetica Neue", 1, 13)); // NOI18N
+        forthRowNinthCol.setForeground(new java.awt.Color(255, 255, 255));
+        forthRowNinthCol.setText("E");
+        getContentPane().add(forthRowNinthCol, new org.netbeans.lib.awtextra.AbsoluteConstraints(760, 190, -1, -1));
+
+        fifthRowNinthCol.setFont(new java.awt.Font("Helvetica Neue", 1, 13)); // NOI18N
+        fifthRowNinthCol.setForeground(new java.awt.Color(255, 255, 255));
+        fifthRowNinthCol.setText("E");
+        getContentPane().add(fifthRowNinthCol, new org.netbeans.lib.awtextra.AbsoluteConstraints(760, 250, -1, -1));
+
+        sixthRowNinthCol.setFont(new java.awt.Font("Helvetica Neue", 1, 13)); // NOI18N
+        sixthRowNinthCol.setForeground(new java.awt.Color(255, 255, 255));
+        sixthRowNinthCol.setText("E");
+        getContentPane().add(sixthRowNinthCol, new org.netbeans.lib.awtextra.AbsoluteConstraints(750, 300, -1, -1));
+
+        seventhRowNinthCol.setFont(new java.awt.Font("Helvetica Neue", 1, 13)); // NOI18N
+        seventhRowNinthCol.setForeground(new java.awt.Color(255, 255, 255));
+        seventhRowNinthCol.setText("E");
+        getContentPane().add(seventhRowNinthCol, new org.netbeans.lib.awtextra.AbsoluteConstraints(750, 350, -1, -1));
+
+        eighthRowNinthCol.setFont(new java.awt.Font("Helvetica Neue", 1, 13)); // NOI18N
+        eighthRowNinthCol.setForeground(new java.awt.Color(255, 255, 255));
+        eighthRowNinthCol.setText("E");
+        getContentPane().add(eighthRowNinthCol, new org.netbeans.lib.awtextra.AbsoluteConstraints(750, 390, -1, -1));
+
+        ninthRowNinthCol.setFont(new java.awt.Font("Helvetica Neue", 1, 13)); // NOI18N
+        ninthRowNinthCol.setForeground(new java.awt.Color(255, 255, 255));
+        ninthRowNinthCol.setText("E");
+        getContentPane().add(ninthRowNinthCol, new org.netbeans.lib.awtextra.AbsoluteConstraints(750, 420, -1, -1));
 
         Player2ScoreValue.setBackground(new java.awt.Color(255, 255, 255));
         Player2ScoreValue.setFont(new java.awt.Font("Helvetica Neue", 0, 24)); // NOI18N
@@ -876,13 +1101,7 @@ public class GameMainPanel extends javax.swing.JFrame {
                 jButton1ActionPerformed(evt);
             }
         });
-        getContentPane().add(jButton1, new org.netbeans.lib.awtextra.AbsoluteConstraints(130, 410, -1, -1));
-
-        StoneColor.setBackground(new java.awt.Color(255, 255, 255));
-        StoneColor.setFont(new java.awt.Font("Kohinoor Telugu", 0, 18)); // NOI18N
-        StoneColor.setForeground(new java.awt.Color(255, 255, 255));
-        StoneColor.setText("COLOR");
-        getContentPane().add(StoneColor, new org.netbeans.lib.awtextra.AbsoluteConstraints(150, 190, 90, -1));
+        getContentPane().add(jButton1, new org.netbeans.lib.awtextra.AbsoluteConstraints(130, 390, -1, -1));
 
         Player1ScoreValue.setBackground(new java.awt.Color(255, 255, 255));
         Player1ScoreValue.setFont(new java.awt.Font("Helvetica Neue", 0, 24)); // NOI18N
@@ -910,7 +1129,7 @@ public class GameMainPanel extends javax.swing.JFrame {
 
         wallpaper.setIcon(new javax.swing.ImageIcon(getClass().getResource("/images/GamePanel.png"))); // NOI18N
         wallpaper.setText("jLabel1");
-        getContentPane().add(wallpaper, new org.netbeans.lib.awtextra.AbsoluteConstraints(0, -10, 880, 470));
+        getContentPane().add(wallpaper, new org.netbeans.lib.awtextra.AbsoluteConstraints(0, -10, 800, 470));
 
         Player1Score1.setBackground(new java.awt.Color(255, 255, 255));
         Player1Score1.setFont(new java.awt.Font("Helvetica Neue", 0, 24)); // NOI18N
@@ -922,10 +1141,17 @@ public class GameMainPanel extends javax.swing.JFrame {
     }// </editor-fold>//GEN-END:initComponents
 
     private void jButton1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton1ActionPerformed
+ client.sendMove("EXIT");
 
+ 
+ 
+ 
         Map<String, Integer> result = calculateTerritory(boardInfo);
+        JOptionPane.showMessageDialog(rootPane, "Game was passed by a certain player BLACK : " + result.get("BLACK") + "WHITE:" + result.get("WHITE"));
+         System.exit(0);
         System.out.println("Black Territory: " + result.get("BLACK"));
         System.out.println("White Territory: " + result.get("WHITE"));
+        
 
         // TODO add your handling code here:
     }//GEN-LAST:event_jButton1ActionPerformed
@@ -999,8 +1225,6 @@ public class GameMainPanel extends javax.swing.JFrame {
     private javax.swing.JLabel SeventhRowThirdCol;
     private javax.swing.JLabel SixthRowSecCol;
     private javax.swing.JLabel SixthRowThirdCol;
-    private javax.swing.JLabel StoneColor;
-    private javax.swing.JLabel TeamColorLabel;
     private javax.swing.JLabel ThirdRowSecCol;
     private javax.swing.JLabel ThirdRowThirdCol;
     private javax.swing.JLabel eightRowSeventhCol;
